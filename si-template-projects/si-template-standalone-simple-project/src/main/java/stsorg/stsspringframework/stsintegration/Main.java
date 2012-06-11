@@ -21,7 +21,7 @@ import org.apache.log4j.Logger;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import stsorg.stsspringframework.stsintegration.service.StringConversionService;
+import stsorg.stsspringframework.stsintegration.mysubsystem.service.StringConversionService;
 
 
 /**

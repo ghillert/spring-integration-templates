@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors
+ * Copyright 2002-2013 the original author or authors
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -15,26 +15,32 @@
  */
 package stsorg.stsspringframework.stsintegration.mvc.controller;
 
-import java.util.Collection;
+import java.util.SortedSet;
 
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import stsorg.stsspringframework.stsintegration.model.TwitterAdapterStatus;
 import stsorg.stsspringframework.stsintegration.model.TwitterMessage;
+import stsorg.stsspringframework.stsintegration.model.TwitterMessages;
 import stsorg.stsspringframework.stsintegration.service.TwitterService;
+import stsorg.stsspringframework.stsintegration.support.SortOrder;
 
 /**
  * Handles requests for the application home page.
  *
- * @author Your Name Here
- * @version 1.0
+ * @author SI-TEMPLATE-AUTHOR
+ * @since  SI-TEMPLATE-VERSION
  *
  */
 @Controller
+@RequestMapping
 public class HomeController {
 
 	private static final Logger LOGGER = Logger.getLogger(HomeController.class);
@@ -45,47 +51,55 @@ public class HomeController {
 	/**
 	 * Simply selects the home view to render by returning its name.
 	 */
-	@RequestMapping(value="/")
-	public String home(Model model, @RequestParam(required=false) String startTwitter,
-									@RequestParam(required=false) String stopTwitter) {
+	@RequestMapping(value={"/", "/tweets"})
+	public String home(Model model, @RequestParam(required=false) Long latestTweetId,
+			@RequestParam(defaultValue="DESCENDING", required=false) SortOrder sortOrder) {
 
-		if (startTwitter != null) {
-			twitterService.startTwitterAdapter();
-			return "redirect:/";
+		if (latestTweetId == null) {
+			latestTweetId = 0L;
 		}
 
-		if (stopTwitter != null) {
-			twitterService.stopTwitterAdapter();
-			return "redirect:/";
+		final SortedSet<TwitterMessage> twitterMessages = twitterService.getTwitterMessages(latestTweetId, sortOrder);
+
+		TwitterMessages twitterMessagesWrapper = new TwitterMessages();
+
+		if (twitterMessages == null || twitterMessages.isEmpty()) {
+			twitterMessagesWrapper.setLatestTweetId(latestTweetId);
+		} else {
+			twitterMessagesWrapper.setTwitterMessages(twitterMessages);
 		}
 
-		final Collection<TwitterMessage> twitterMessages = twitterService.getTwitterMessages();
+		twitterMessagesWrapper.setAdapterRunning(twitterService.isTwitterAdapterRunning());
 
-		if (LOGGER.isInfoEnabled()) {
-			LOGGER.info(String.format("Retrieved %s Twitter messages.", twitterMessages.size()));
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug(String.format("Latest Tweet ID: '%s'; Adapter running: %s",
+					twitterMessagesWrapper.getLatestTweetId(),
+					twitterMessagesWrapper.isAdapterRunning()));
 		}
 
-		model.addAttribute("twitterMessages", twitterMessages);
+		model.addAttribute("tweets", twitterMessagesWrapper);
 
 		return "home";
 	}
 
-	/**
-	 * Simply selects the home view to render by returning its name.
-	 */
-	@RequestMapping(value="/ajax")
-	public String ajaxCall(Model model) {
+	@ResponseBody
+	@RequestMapping(value={"/adapter/{state}"})
+	public void state(@PathVariable String state) {
 
-		final Collection<TwitterMessage> twitterMessages = twitterService.getTwitterMessages();
-
-		if (LOGGER.isInfoEnabled()) {
-			LOGGER.info(String.format("Retrieved %s Twitter messages.", twitterMessages.size()));
+		if ("start".equalsIgnoreCase(state)) {
+			twitterService.startTwitterAdapter();
+		}
+		else if ("stop".equalsIgnoreCase(state)) {
+			twitterService.stopTwitterAdapter();
 		}
 
-		model.addAttribute("twitterMessages", twitterMessages);
+	}
 
-		return "twitterMessages";
-
+	@ResponseBody
+	@RequestMapping(value={"/adapter-running"})
+	public TwitterAdapterStatus isRunning() {
+		TwitterAdapterStatus status = new TwitterAdapterStatus(twitterService.isTwitterAdapterRunning());
+		return status;
 	}
 }
 

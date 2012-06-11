@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import stsorg.stsspringframework.stsintegration.service.StringConversionService;
+import stsorg.stsspringframework.stsintegration.mysubsystem.service.StringConversionService;
 
 /**
  * Verify that the Spring Integration Application Context starts successfully.

@@ -12,7 +12,11 @@
 		</buildCommand>
 	</buildSpec>
 	<natures>
+<<<<<<< HEAD
 		<nature>org.springsource.ide.eclipse.gradle.core.nature</nature>
+=======
+		<nature>com.springsource.sts.gradle.core.nature</nature>
+>>>>>>> INTTEMPLATES-11 - Upgrade the WebUI
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.eclipse.jdt.groovy.core.groovyNature</nature>
 		<nature>org.springframework.ide.eclipse.core.springnature</nature>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors
+ * Copyright 2002-2013 the original author or authors
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package stsorg.stsspringframework.stsintegration.service.impl;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,19 +30,22 @@ import org.springframework.stereotype.Service;
 
 import stsorg.stsspringframework.stsintegration.model.TwitterMessage;
 import stsorg.stsspringframework.stsintegration.service.TwitterService;
+import stsorg.stsspringframework.stsintegration.support.SortOrder;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 /**
- * Implementation of the TwitterService interface.
+ * Implementation of the {@link TwitterService} interface.
  *
- * @author Your Name Here
- * @version 1.0
- *
+ * @author SI-TEMPLATE-AUTHOR
+ * @since  SI-TEMPLATE-VERSION
  */
 @Service
 public class DefaultTwitterService implements TwitterService {
 
 	/** Holds a collection of polled Twitter messages */
-	private volatile Map<Long, TwitterMessage> twitterMessages;
+	private final Cache<Long, TwitterMessage> twitterMessages;
 
 	@Autowired
 	@Qualifier("controlBusChannel")
@@ -54,22 +57,37 @@ public class DefaultTwitterService implements TwitterService {
 	 */
 	public DefaultTwitterService() {
 
-		twitterMessages = new LinkedHashMap<Long, TwitterMessage>( 10, 0.75f, true ) {
-
-			private static final long serialVersionUID = 1L;
-
-			protected boolean removeEldestEntry( java.util.Map.Entry<Long, TwitterMessage> entry ) {
-				return size() > 10;
-			}
-
-		};
+		twitterMessages = CacheBuilder.newBuilder()
+			.maximumSize(10)
+			.build();
 
 	}
 
 	/** {@inheritDoc} */
 	@Override
-	public Collection<TwitterMessage> getTwitterMessages() {
-		return twitterMessages.values();
+	public SortedSet<TwitterMessage> getTwitterMessages(Long tweetId, SortOrder sortOrder) {
+
+		final TreeSet<TwitterMessage> tweets = new TreeSet<TwitterMessage>();
+
+		if (tweetId != null) {
+
+			final Map<Long, TwitterMessage> twitterMessagesAsMap = twitterMessages.asMap();
+
+			for (Long id : twitterMessagesAsMap.keySet()) {
+				if (id.compareTo(tweetId) > 0) {
+					tweets.add(twitterMessages.getIfPresent(id));
+				}
+			}
+
+		} else {
+			tweets.addAll(this.twitterMessages.asMap().values());
+		}
+
+		if (SortOrder.DESCENDING.equals(sortOrder)) {
+			return tweets.descendingSet();
+		}
+
+		return tweets;
 	}
 
 	/** {@inheritDoc} */
@@ -94,6 +112,19 @@ public class DefaultTwitterService implements TwitterService {
 
 	}
 
+	/** {@inheritDoc} */
+	@Override
+	public boolean isTwitterAdapterRunning() {
+
+		final MessagingTemplate m = new MessagingTemplate();
+		final Message<String> operation = MessageBuilder.withPayload("@twitter.isRunning()").build();
+
+		@SuppressWarnings("unchecked")
+		Message<Boolean> reply = (Message<Boolean>) m.sendAndReceive(channel, operation);
+
+		return reply.getPayload();
+
+	}
 
 	/**
 	 * Called by Spring Integration to populate a simple LRU cache.
@@ -101,10 +132,14 @@ public class DefaultTwitterService implements TwitterService {
 	 * @param tweet - The Spring Integration tweet object.
 	 */
 	public void addTwitterMessages(Tweet tweet) {
-		this.twitterMessages.put(tweet.getCreatedAt().getTime(), new TwitterMessage(tweet.getCreatedAt(),
-			tweet.getText(),
-			tweet.getFromUser(),
-			tweet.getProfileImageUrl()));
+
+			this.twitterMessages.put(tweet.getId(), new TwitterMessage(
+					tweet.getId(),
+					tweet.getCreatedAt(),
+					tweet.getText(),
+					tweet.getFromUser(),
+					tweet.getProfileImageUrl()));
+
 	}
 
 }

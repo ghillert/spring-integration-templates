@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors
+ * Copyright 2002-2013 the original author or authors
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -15,16 +15,17 @@
  */
 package stsorg.stsspringframework.stsintegration.service;
 
-import java.util.Collection;
+import java.util.SortedSet;
 
 import stsorg.stsspringframework.stsintegration.model.TwitterMessage;
+import stsorg.stsspringframework.stsintegration.support.SortOrder;
 
 /**
  * Provides some basic methods for controlling the flow of Twitter messages.
- * 
- * @author Your Name Here
- * @version 1.0
- * 
+ *
+ * @author SI-TEMPLATE-AUTHOR
+ * @since  SI-TEMPLATE-VERSION
+ *
  */
 public interface TwitterService {
 
@@ -33,8 +34,7 @@ public interface TwitterService {
 	 * method does not perform the actual Twitter search. It merely returns all
 	 * the Tweets that were previously polled through Spring Integration and
 	 * which have been cached for returning those to the web-frontend. */
-	Collection<TwitterMessage> getTwitterMessages();
-
+	SortedSet<TwitterMessage> getTwitterMessages(Long tweetId, SortOrder sortOrder);
 	/**
 	 * By default - After application startup, the Spring Integration Twitter
 	 * search-inbound-channel-adapter is stopped. Use this method to start
@@ -47,5 +47,11 @@ public interface TwitterService {
 	 * search-inbound-channel-adapter.
 	 */
 	void stopTwitterAdapter();
+
+	/**
+	 *  Returns <code>true</code> if the Twitter Adapter is running,
+	 *  <code>false</code> otherwise.
+	 */
+	boolean isTwitterAdapterRunning();
 
 }

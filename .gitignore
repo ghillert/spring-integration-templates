@@ -10,3 +10,4 @@ target/
 template.zip
 .pmd
 bin
+rebel.xml

@@ -13,7 +13,7 @@
  *     See the License for the specific language governing permissions and
  *     limitations under the License.
  */
-package stsorg.stsspringframework.stsintegration.service;
+package stsorg.stsspringframework.stsintegration.mysubsystem.service;
 
 /**
  * Provides string manipulation services.
